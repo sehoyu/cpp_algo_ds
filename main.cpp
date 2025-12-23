@@ -1,149 +1,133 @@
-#include <algorithm>
 #include <iostream>
+#include <algorithm>
 #include <sstream>
 
 template <typename T>
-class dynamic_array {
+class dynamic_array
+{
   T* data;
-  size_t n;
+	size_t n;
 
 public:
-  // 1. ±âº» »ı¼ºÀÚ: ¸Å°³º¯¼ö·Î ¹ŞÀº Å©±â¸¸Å­ ¸Ş¸ğ¸® ÇÒ´ç
-  dynamic_array(int n) {
-    // TODO: n ÃÊ±âÈ­ ¹× data¿¡ T Å¸ÀÔ ¹è¿­ µ¿Àû ÇÒ´ç
-    this->n = n;
-    data = new T[n];
-    
-  }
+	dynamic_array(int n)
+	{
+		this->n = n;
+		data = new T[n];
+	}
 
-  // 2. º¹»ç »ı¼ºÀÚ: ±íÀº º¹»ç(Deep Copy) ±¸Çö
-  dynamic_array(const dynamic_array<T>& other) {
-    // TODO: otherÀÇ Å©±â¸¦ º¹»çÇÏ°í »õ·Î¿î ¸Ş¸ğ¸® ÇÒ´ç ÈÄ ³»¿ë º¹»ç
-    n = other.size();
+	dynamic_array(const dynamic_array<T>& other)
+	{
+		n = other.n;
+		data = new T[n];
 
-    for (int i = 0; i < n; i++) {
-      data[i] = other[i];
-    }
-  }
+		for (int i = 0; i < n; i++)
+			data[i] = other[i];
+	}
 
-  // 3. Ã·ÀÚ ¿¬»êÀÚ (L-value / R-value)
-  T& operator[](int index) {
-    // TODO: ÇØ´ç ÀÎµ¦½ºÀÇ µ¥ÀÌÅÍ ÂüÁ¶ ¹İÈ¯
-    // ? ¿Ö ÀÎµ¦½º ¹üÀ§ °Ë»ç¸¦ ¾È ÇÏÁö?
-    return data[index];
-  }
 
-  const T& operator[](int index) const {
-    // TODO: »ó¼ö °´Ã¼¸¦ À§ÇÑ ÂüÁ¶ ¹İÈ¯
-    return data[index];
-  }
+	T& operator[](int index)
+	{
+		return data[index];
+	}
 
-  // 4. ¹üÀ§ Ã¼Å©°¡ Æ÷ÇÔµÈ Á¢±Ù ÇÔ¼ö
-  T& at(int index) {
-    // TODO: index°¡ nº¸´Ù ÀÛÀ¸¸é ¹İÈ¯, ¾Æ´Ï¸é ¿¹¿Ü Ã³¸®
-    if (index < n) {
-      return data[index];
-    }
+	const T& operator[](int index) const
+	{
+		return data[index];
+	}
 
-    throw "Index out of range";
-  }
+	T& at(int index)
+	{
+		if (index < n)
+			return data[index];
+		throw "Index out of range";
+	}
 
-  size_t size() const {
-    // TODO: ¹è¿­ÀÇ Å©±â ¹İÈ¯
-    return n;
-  }
+	size_t size() const
+	{
+		return n;
+	}
 
-  // 5. ¼Ò¸êÀÚ: ¸Ş¸ğ¸® ´©¼ö ¹æÁö
-  ~dynamic_array() {
-    // TODO: µ¿Àû ÇÒ´çµÈ ¹è¿­ ÇØÁ¦
-    delete[] data;
-  }
+	~dynamic_array()
+	{
+		delete[] data; // ë©”ëª¨ë¦¬ ë¦­ ë°©ì§€
+	}
 
-  // 6. ¹İº¹ÀÚ (Iterator) Áö¿ø
-  T* begin() { return data; }
-  const T* begin() const { return data; }
-  T* end() { return data + n; }
-  const T* end() const { return data + n; }
+	T* begin() { return data; }
+	const T* begin() const { return data; }
+	T* end() { return data + n; }
+	const T* end() const { return data + n; }
 
-  // 7. µÎ ¹è¿­À» ÇÕÄ¡´Â + ¿¬»êÀÚ ¿À¹ö·Îµù (Friend)
-  friend dynamic_array<T> operator+(const dynamic_array<T>& arr1,
-                                    const dynamic_array<T>& arr2) {
-    // TODO: µÎ ¹è¿­ÀÇ Å©±â¸¦ ÇÕÄ£ °á°ú °´Ã¼ »ı¼º ÈÄ std::copy µîÀ¸·Î µ¥ÀÌÅÍ
-    // º¹»ç
-    dynamic_array<T> result(arr1.size() + arr2.size());
-    // ! dynamic_array<T> result = new dynamic_array<T, arr1.size() +
-    // arr2.size()>;
-    std::copy(arr1.begin(), arr1.end(), result.begin());
-    std::copy(arr2.begin(), arr2.end(), result.begin() + arr1.size());
-    // ! std::copy(arr2.begin(), arr2.end(), result + arr1.size());
+	friend dynamic_array<T> operator+(const dynamic_array<T>& arr1, dynamic_array<T>& arr2)
+	{
+		dynamic_array<T> result(arr1.size() + arr2.size());
+		std::copy(arr1.begin(), arr1.end(), result.begin());
+		std::copy(arr2.begin(), arr2.end(), result.begin() + arr1.size());
 
-    return result;
-  }
+		return result;
+	}
 
-  // 8. Ãâ·ÂÀ» À§ÇÑ ¹®ÀÚ¿­ º¯È¯ ÇÔ¼ö
-  std::string to_string(const std::string& sep = ", ") {
-    // TODO: ostringstreamÀ» »ç¿ëÇÏ¿© ¿ø¼ÒµéÀ» sepÀ¸·Î ±¸ºĞÇØ °áÇÕ
-    // ! ¹è¿­ ±æÀÌ Ã¼Å©
-    if (n == 0) {
-      return "";
-    }
+	std::string to_string(const std::string& sep = ", ")
+	{
+		if (n == 0)
+			return "";
 
-    std::ostringstream os;
-    os << data[0];
-    for (int i = 1; i < n; i++) {
-      os << sep << data[i];
-    }
+		std::ostringstream os;
+		os << data[0];
 
-    return os.str();
-  }
+		for (int i = 1; i < n; i++)
+			os << sep << data[i];
+
+		return os.str();
+	}
 };
 
-// Å×½ºÆ®¸¦ À§ÇÑ ±¸Á¶Ã¼
-struct student {
-  std::string name;
-  int standard;
+struct student
+{
+	std::string name;
+	int standard;
 };
 
-// student ±¸Á¶Ã¼¸¦ À§ÇÑ Ãâ·Â ¿¬»êÀÚ ¿À¹ö·Îµù
-std::ostream& operator<<(std::ostream& os, const student& s) {
-  // TODO: [ÀÌ¸§, ÇĞ³â] Çü½ÄÀ¸·Î ½ºÆ®¸²¿¡ »ğÀÔ
-  // ? ±»ÀÌ ¿Ö °ıÈ£¸¦?
-  return (os << "[" << s.name << ", " << s.standard << "]");
-  ;
+std::ostream& operator<<(std::ostream& os, const student& s)
+{
+	return (os << "[" << s.name << ", " << s.standard << "]");
 }
 
-int main() {
-  int nStudents;
-  std::cout << "1¹İ ÇĞ»ı ¼ö¸¦ ÀÔ·ÂÇÏ¼¼¿ä: ";
-  std::cin >> nStudents;
+int main()
+{
+	int nStudents;
+	std::cout << "1ë°˜ í•™ìƒ ìˆ˜ë¥¼ ì…ë ¥í•˜ì„¸ìš”: ";
+	std::cin >> nStudents;
 
-  dynamic_array<student> class1(nStudents);
-  for (int i = 0; i < nStudents; i++) {
-    std::string name;
-    int standard;
-    std::cout << i + 1 << "¹øÂ° ÇĞ»ı ÀÌ¸§°ú ³ªÀÌ¸¦ ÀÔ·ÂÇÏ¼¼¿ä: ";
-    std::cin >> name >> standard;
-    class1[i] = student{name, standard};
-  }
+	dynamic_array<student> class1(nStudents);
+	for (int i = 0; i < nStudents; i++)
+	{
+		std::string name;
+		int standard;
+		std::cout << i + 1 << "ë²ˆì§¸ í•™ìƒ ì´ë¦„ê³¼ ë‚˜ì´ë¥¼ ì…ë ¥í•˜ì„¸ìš”: ";
+		std::cin >> name >> standard;
+		class1[i] = student{name, standard};
+	}
 
-  // ¹è¿­ Å©±âº¸´Ù Å« ÀÎµ¦½ºÀÇ ÇĞ»ı¿¡ Á¢±Ù
-  try {
-    // ¾Æ·¡ ÁÖ¼®À» ÇØÁ¦ÇÏ¸é ÇÁ·Î±×·¥ÀÌ ºñÁ¤»ó Á¾·áÇÕ´Ï´Ù.
-    // class1[nStudents] = student {"John", 8}; // ¿¹»óÇÒ ¼ö ¾ø´Â µ¿ÀÛ
+	// ë°°ì—´ í¬ê¸°ë³´ë‹¤ í° ì¸ë±ìŠ¤ì˜ í•™ìƒì— ì ‘ê·¼
+	try
+	{
+		// ì•„ë˜ ì£¼ì„ì„ í•´ì œí•˜ë©´ í”„ë¡œê·¸ë¨ì´ ë¹„ì •ìƒ ì¢…ë£Œí•©ë‹ˆë‹¤.
+		// class1[nStudents] = student {"John", 8}; // ì˜ˆìƒí•  ìˆ˜ ì—†ëŠ” ë™ì‘
 
-    class1.at(nStudents) = student{"John", 8}; // ¿¹¿Ü ¹ß»ı
-  } catch (...) {
-    std::cout << "¿¹¿Ü ¹ß»ı!" << std::endl;
-  }
+		class1.at(nStudents) = student{"John", 8}; // ì˜ˆì™¸ ë°œìƒ
+	}
+	catch (...)
+	{
+		std::cout << "ì˜ˆì™¸ ë°œìƒ!" << std::endl;
+	}
 
-  // ±íÀº º¹»ç
-  auto class2 = class1;
-  std::cout << "1¹İÀ» º¹»çÇÏ¿© 2¹İ »ı¼º: " << class2.to_string() << std::endl;
+	// ê¹Šì€ ë³µì‚¬
+	auto class2 = class1;
+	std::cout << "1ë°˜ì„ ë³µì‚¬í•˜ì—¬ 2ë°˜ ìƒì„±: " << class2.to_string() << std::endl;
 
-  // µÎ ÇĞ±ŞÀ» ÇÕÃÄ¼­ »õ·Î¿î Å« ÇĞ±ŞÀ» »ı¼º
-  auto class3 = class1 + class2;
-  std::cout << "1¹İ°ú 2¹İÀ» ÇÕÃÄ 3¹İ »ı¼º : " << class3.to_string()
-            << std::endl;
+	// ë‘ í•™ê¸‰ì„ í•©ì³ì„œ ìƒˆë¡œìš´ í° í•™ê¸‰ì„ ìƒì„±
+	auto class3 = class1 + class2;
+	std::cout << "1ë°˜ê³¼ 2ë°˜ì„ í•©ì³ 3ë°˜ ìƒì„± : " << class3.to_string() << std::endl;
 
-  return 0;
+	return 0;
 }

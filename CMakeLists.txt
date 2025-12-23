@@ -11,7 +11,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # 4. 실행 파일 생성
 # 'main_exec'는 실행 파일 이름, 'main.cpp'는 소스 파일입니다.
 # --- My Practice ---
-add_executable(main main.cpp "sources/Lesson1/Exercise01/practice.cpp" "sources/Lesson1/Exercise01/my_answer.cpp")
+add_executable(main main.cpp)
 
 # --- Chapter 1 Samples ---
 # 필요할 때마다 아래에 추가
