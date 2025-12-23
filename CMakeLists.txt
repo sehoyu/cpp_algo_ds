@@ -13,6 +13,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # --- My Practice ---
 add_executable(main main.cpp)
 
-# --- Chapter 1 Samples ---
-# 필요할 때마다 아래에 추가
-# add_executable(sample_1_1 samples/1_1.cpp)
+if (MSVC)
+    # 윈도우 MSVC 컴파일러에게 소스코드가 UTF-8임을 명시
+    add_compile_options(/utf-8)
+endif ()
