@@ -1,4 +1,31 @@
+---
+# 언리얼 엔진 공식 표준 기반 핵심 설정
+Language: Cpp
 BasedOnStyle: LLVM
+
+# 1. 들여쓰기: 언리얼 표준 4칸
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+
+# 2. 중괄호: Allman Style (다음 줄에 중괄호 배치)
+# Java/JS 습관을 C++ 구조로 시각화하는 가장 중요한 옵션
+BreakBeforeBraces: Allman
+
+# 3. 포인터 정렬: 타입 중심 (Left)
+# DerivePointerAlignment를 false로 해야 이 설정이 강제됨
 DerivePointerAlignment: false
 PointerAlignment: Left
-AlwaysBreakTemplateDeclarations: Yes
+
+# 4. 공백 제어: 키워드와 괄호 사이 공백 (if, for, while 등)
+SpaceBeforeParens: ControlStatements
+
+# 5. 줄바꿈 방지: 알고리즘 가독성을 위해 포맷터가 줄을 임의로 쪼개지 않게 함
+ColumnLimit: 0
+
+# 6. 연속 빈 줄 제한: 코드 사이의 과도한 공백 제거
+MaxEmptyLinesToKeep: 1
+
+# 7. 초기화 리스트: 생성자나 구조체 초기화 시 언리얼 스타일 유지
+ConstructorInitializerIndentWidth: 4
+---
