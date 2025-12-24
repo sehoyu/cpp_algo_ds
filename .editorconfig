@@ -1,6 +1,17 @@
 root = true
 
 [*]
+# 1. 인코딩: 윈도우 MSVC 한글 깨짐 방지 및 맥 호환성
 charset = utf-8
+# 2. 줄바꿈: 맥/윈도우 협업 시 표준인 LF로 강제
+end_of_line = lf
+# 3. 코드 스타일: C++ 표준에 흔히 쓰이는 공백 4칸
+indent_style = space
+indent_size = 4
+# 4. 기타 정리
 insert_final_newline = true
 trim_trailing_whitespace = true
+
+[*.{vcproj,vcxproj,sln}]
+# 윈도우 전용 프로젝트 파일은 시스템 기본값 허용 (선택 사항)
+end_of_line = crlf
