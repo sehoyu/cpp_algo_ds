@@ -1,3 +1,4 @@
+#pragma once
 #include <algorithm>
 #include <iostream>
 #include <sstream>
@@ -28,7 +29,7 @@ public:
   // 3. 첨자 연산자 (L-value / R-value)
   T& operator[](int index) {
     // TODO: 해당 인덱스의 데이터 참조 반환
-    /*
+    /**
      * NOTE: 왜 인덱스 검사를 안 할까?
      * C++의 Zero-overhead 철학: 성능 최적화를 위해(e.g. 반복문) 호출자에게
      * 책임을 위임함. 필요하다면 assert()를 사용해 디버그 모드에서만 검사하는
@@ -119,5 +120,3 @@ std::ostream& operator<<(std::ostream& os, const student& s) {
   os << s.name << s.standard;
   return os;
 }
-
-int main() { return 0; }
