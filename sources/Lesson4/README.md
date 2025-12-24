@@ -11,6 +11,7 @@
 
 1. CMake를 설치합니다.
 2. 다음 명령을 입력합니다.
+
 ```
 mkdir build && cd build
 cmake ../

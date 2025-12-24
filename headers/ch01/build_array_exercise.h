@@ -15,8 +15,8 @@ template <typename... Args>
 auto build_array(Args&&... args)
     -> std::array<typename std::common_type<Args...>::type, sizeof...(args)>
 {
-  // NOTE: std::common_type<Args...>::type을 사용하여 모든 Args가 호환되는 공통 타입을 정의하세요.
+    // NOTE: std::common_type<Args...>::type을 사용하여 모든 Args가 호환되는 공통 타입을 정의하세요.
 
-  // TODO: 초기화 리스트와 std::forward를 사용하여 인자들을 std::array 형태로 반환하세요.
-  // Tip: 가변 인자 팩 확장을 위해 '...' 연산자를 적절한 위치에 사용해야 합니다.
+    // TODO: 초기화 리스트와 std::forward를 사용하여 인자들을 std::array 형태로 반환하세요.
+    // Tip: 가변 인자 팩 확장을 위해 '...' 연산자를 적절한 위치에 사용해야 합니다.
 }

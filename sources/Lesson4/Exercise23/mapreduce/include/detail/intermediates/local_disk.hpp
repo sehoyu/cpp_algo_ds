@@ -3,40 +3,43 @@
 
 #pragma once
 
-#include <iomanip>      // setw
+#include <iomanip> // setw
 #ifdef __GNUC__
-#include <iostream>     // ubuntu linux
-#include <fstream>      // ubuntu linux
+#include <fstream>  // ubuntu linux
+#include <iostream> // ubuntu linux
 #endif
 
-namespace mapreduce {
+namespace mapreduce
+{
 
 struct null_combiner;
 
-namespace detail {
+namespace detail
+{
 
-	template<typename T> uintmax_t    const length(T const &str);
+template <typename T>
+uintmax_t const length(T const& str);
 
-template<>
-inline uintmax_t const length(std::string const &str)
+template <>
+inline uintmax_t const length(std::string const& str)
 {
     return str.length();
 }
 
 struct file_lines_comp
 {
-    template<typename T>
-    bool const operator()(T const &first, T const &second)
+    template <typename T>
+    bool const operator()(T const& first, T const& second)
     {
         return first.second < second.second;
     }
 };
 
-template<typename Record>
+template <typename Record>
 struct file_merger
 {
-    template<typename List>
-    void operator()(List const &filenames, std::string const &dest)
+    template <typename List>
+    void operator()(List const& filenames, std::string const& dest)
     {
         std::copy(filenames.cbegin(), filenames.cend(), std::back_inserter(files));
         std::copy(filenames.cbegin(), filenames.cend(), std::back_inserter(delete_files));
@@ -63,7 +66,7 @@ struct file_merger
     {
         ~file_deleter()
         {
-            for (auto const &filename : *this)
+            for (auto const& filename : *this)
                 detail::delete_file(filename);
         }
 
@@ -94,7 +97,7 @@ struct file_merger
         }
     }
 
-    void merge_files(std::string const &dest)
+    void merge_files(std::string const& dest)
     {
         // find the smallest record in the list
         while (file_lines.size() > 0)
@@ -133,7 +136,7 @@ struct file_merger
         }
     }
 
-    void rename_result_for_iterative_merge(std::string const &dest)
+    void rename_result_for_iterative_merge(std::string const& dest)
     {
         outfile.close();
 
@@ -147,61 +150,61 @@ struct file_merger
     }
 
   private:
-    typedef std::list<std::pair<std::shared_ptr<std::ifstream>, Record> > file_lines_t;
-    file_lines_t           file_lines;
+    typedef std::list<std::pair<std::shared_ptr<std::ifstream>, Record>> file_lines_t;
+    file_lines_t file_lines;
     std::list<std::string> files;
-    std::ofstream          outfile;
-    file_deleter           delete_files;
+    std::ofstream outfile;
+    file_deleter delete_files;
 };
 
-template<typename Record>
+template <typename Record>
 struct file_key_combiner
 {
-    bool const operator()(std::string const &in, std::string const &out) const
+    bool const operator()(std::string const& in, std::string const& out) const
     {
         return mapreduce::file_key_combiner<Record>(in, out);
     }
 };
 
-}   // namespace detail
+} // namespace detail
 
-namespace intermediates {
+namespace intermediates
+{
 
-template<typename MapTask, typename ReduceTask>
+template <typename MapTask, typename ReduceTask>
 class reduce_file_output
 {
   public:
-    reduce_file_output(std::string const &output_filespec,
-                       size_t      const  partition,
-                       size_t      const  num_partitions)
+    reduce_file_output(std::string const& output_filespec,
+                       size_t const partition,
+                       size_t const num_partitions)
     {
         std::ostringstream filename;
-        filename << output_filespec << partition+1 << "_of_" << num_partitions;
+        filename << output_filespec << partition + 1 << "_of_" << num_partitions;
         filename_ = filename.str();
         output_file_.open(filename_.c_str(), std::ios_base::binary);
         if (!output_file_.is_open())
-            throw std::runtime_error("Failed to open file " + filename_ );
+            throw std::runtime_error("Failed to open file " + filename_);
     }
 
-    void operator()(typename ReduceTask::key_type   const &key,
-                    typename ReduceTask::value_type const &value)
+    void operator()(typename ReduceTask::key_type const& key,
+                    typename ReduceTask::value_type const& value)
     {
         output_file_ << key << "\t" << value << "\r";
     }
 
   private:
-    std::string   filename_;
+    std::string filename_;
     std::ofstream output_file_;
 };
 
-
-template<typename T>
+template <typename T>
 struct key_combiner : public T
 {
     // the file_key_combiner will call this function to write multiple
     // occurances of a key/value pair to an output stream. the generic
     // case is to write the same key/value pair multiple times
-    void write_multiple_values(std::ostream &out, size_t count)
+    void write_multiple_values(std::ostream& out, size_t count)
     {
         if (count == 1)
             out << *this << "\r";
@@ -210,46 +213,44 @@ struct key_combiner : public T
             std::ostringstream stream;
             stream << *this;
             std::string record = stream.str();
-            for (size_t loop=0; loop<count; ++loop)
+            for (size_t loop = 0; loop < count; ++loop)
                 out << record << "\r";
         }
     }
 };
 
-
-template<
+template <
     typename MapTask,
     typename ReduceTask,
-    typename KeyType         = typename ReduceTask::key_type,
-    typename PartitionFn     = hash_partitioner,
+    typename KeyType = typename ReduceTask::key_type,
+    typename PartitionFn = hash_partitioner,
     typename StoreResultType = reduce_file_output<MapTask, ReduceTask>,
-    typename CombineFile     = detail::file_key_combiner<key_combiner<std::pair<typename ReduceTask::key_type, typename ReduceTask::value_type>>>,
-    typename MergeFn         = detail::file_merger<std::pair<typename ReduceTask::key_type, typename ReduceTask::value_type> > >
+    typename CombineFile = detail::file_key_combiner<key_combiner<std::pair<typename ReduceTask::key_type, typename ReduceTask::value_type>>>,
+    typename MergeFn = detail::file_merger<std::pair<typename ReduceTask::key_type, typename ReduceTask::value_type>>>
 class local_disk : detail::noncopyable
 {
   public:
-    typedef MapTask         map_task_type;
-    typedef ReduceTask      reduce_task_type;
-    typedef KeyType         key_type;
+    typedef MapTask map_task_type;
+    typedef ReduceTask reduce_task_type;
+    typedef KeyType key_type;
     typedef StoreResultType store_result_type;
 
-    typedef
-    std::pair<
+    typedef std::pair<
         typename reduce_task_type::key_type,
         typename reduce_task_type::value_type>
-    keyvalue_t;
+        keyvalue_t;
 
     class const_result_iterator
-      : public boost::iterator_facade<
-            const_result_iterator,
-            keyvalue_t const,
-            boost::forward_traversal_tag>
+        : public boost::iterator_facade<
+              const_result_iterator,
+              keyvalue_t const,
+              boost::forward_traversal_tag>
     {
         friend class boost::iterator_core_access;
 
       protected:
-        explicit const_result_iterator(local_disk const *outer)
-          : outer_(outer)
+        explicit const_result_iterator(local_disk const* outer)
+            : outer_(outer)
         {
             assert(outer_);
             kvlist_.resize(outer_->num_partitions_);
@@ -262,17 +263,14 @@ class local_disk : detail::noncopyable
             set_current();
         }
 
-        bool const equal(const_result_iterator const &other) const
+        bool const equal(const_result_iterator const& other) const
         {
-            return (kvlist_.size() == 0  &&  other.kvlist_.size() == 0)
-               ||  (kvlist_.size() > 0
-               &&  other.kvlist_.size() > 0
-               &&  kvlist_[index_].second == other.kvlist_[index_].second);
+            return (kvlist_.size() == 0 && other.kvlist_.size() == 0) || (kvlist_.size() > 0 && other.kvlist_.size() > 0 && kvlist_[index_].second == other.kvlist_[index_].second);
         }
 
-        const_result_iterator &begin(void)
+        const_result_iterator& begin(void)
         {
-            for (size_t loop=0; loop<outer_->num_partitions_; ++loop)
+            for (size_t loop = 0; loop < outer_->num_partitions_; ++loop)
             {
                 auto intermediate = outer_->intermediate_files_.find(loop);
                 if (intermediate == outer_->intermediate_files_.end())
@@ -295,14 +293,14 @@ class local_disk : detail::noncopyable
             return *this;
         }
 
-        const_result_iterator &end(void)
+        const_result_iterator& end(void)
         {
             index_ = 0;
             kvlist_.clear();
             return *this;
         }
 
-        keyvalue_t const &dereference(void) const
+        keyvalue_t const& dereference(void) const
         {
             return kvlist_[index_].second;
         }
@@ -310,12 +308,12 @@ class local_disk : detail::noncopyable
         void set_current(void)
         {
             index_ = 0;
-            while (index_<outer_->num_partitions_  &&  kvlist_[index_].first->eof())
-                 ++index_;
-            
-            for (size_t loop=index_+1; loop<outer_->num_partitions_; ++loop)
+            while (index_ < outer_->num_partitions_ && kvlist_[index_].first->eof())
+                ++index_;
+
+            for (size_t loop = index_ + 1; loop < outer_->num_partitions_; ++loop)
             {
-                if (!kvlist_[loop].first->eof()  &&  !kvlist_[index_].first->eof()  &&  kvlist_[index_].second > kvlist_[loop].second)
+                if (!kvlist_[loop].first->eof() && !kvlist_[index_].first->eof() && kvlist_[index_].second > kvlist_[loop].second)
                     index_ = loop;
             }
 
@@ -324,14 +322,13 @@ class local_disk : detail::noncopyable
         }
 
       private:
-        local_disk                    const *outer_;        // parent container
-        size_t                               index_ = 0;    // index of current element
-        typedef
-        std::vector<
+        local_disk const* outer_; // parent container
+        size_t index_ = 0;        // index of current element
+        typedef std::vector<
             std::pair<
                 std::shared_ptr<std::ifstream>,
-                keyvalue_t> >
-        kvlist_t;
+                keyvalue_t>>
+            kvlist_t;
         kvlist_t kvlist_;
 
         friend class local_disk;
@@ -346,13 +343,13 @@ class local_disk : detail::noncopyable
         }
 
         intermediate_file_info(std::string fname)
-          : filename(fname)
+            : filename(fname)
         {
         }
 
         struct kv_file : public std::ofstream
         {
-            typedef typename MapTask::value_type    key_type;
+            typedef typename MapTask::value_type key_type;
             typedef typename ReduceTask::value_type value_type;
 
             kv_file() = default;
@@ -362,7 +359,7 @@ class local_disk : detail::noncopyable
                 close();
             }
 
-            void open(std::string const &filename)
+            void open(std::string const& filename)
             {
                 assert(records_.empty());
                 use_cache_ = true;
@@ -383,11 +380,11 @@ class local_disk : detail::noncopyable
                 return sorted_;
             }
 
-            bool const write(key_type const &key, value_type const &value)
+            bool const write(key_type const& key, value_type const& value)
             {
                 if (use_cache_)
                 {
-                    ++records_.insert(std::make_pair(std::make_pair(key,value),0U)).first->second;
+                    ++records_.insert(std::make_pair(std::make_pair(key, value), 0U)).first->second;
                     return true;
                 }
 
@@ -396,15 +393,15 @@ class local_disk : detail::noncopyable
             }
 
           protected:
-            bool const write(key_type   const &key,
-                             value_type const &value,
-                             size_t     const count)
+            bool const write(key_type const& key,
+                             value_type const& value,
+                             size_t const count)
             {
                 std::ostringstream linebuf;
-                linebuf << std::make_pair(key,value);
+                linebuf << std::make_pair(key, value);
 
                 std::string line(linebuf.str());
-                for (size_t loop=0; loop<count; ++loop)
+                for (size_t loop = 0; loop < count; ++loop)
                 {
                     *this << line << "\r";
                     if (fail())
@@ -416,7 +413,7 @@ class local_disk : detail::noncopyable
             bool const flush_cache(void)
             {
                 use_cache_ = false;
-                for (auto it  = records_.cbegin(); it != records_.cend(); ++it)
+                for (auto it = records_.cbegin(); it != records_.cend(); ++it)
                 {
                     if (!write(it->first.first, it->first.second, it->second))
                         return false;
@@ -427,28 +424,27 @@ class local_disk : detail::noncopyable
             }
 
           private:
-            using record_t  = std::pair<key_type, value_type>;
+            using record_t = std::pair<key_type, value_type>;
             using records_t = std::map<record_t, size_t>;
 
-            bool      sorted_    = true;
-            bool      use_cache_ = true;
+            bool sorted_ = true;
+            bool use_cache_ = true;
             records_t records_;
         };
 
-        std::string             filename;
-        kv_file                 write_stream;
-        std::list<std::string>  fragment_filenames;
+        std::string filename;
+        kv_file write_stream;
+        std::list<std::string> fragment_filenames;
     };
 
-    typedef
-    std::map<
+    typedef std::map<
         size_t, // hash value of intermediate key (R)
-        std::shared_ptr<intermediate_file_info> >
-    intermediates_t;
+        std::shared_ptr<intermediate_file_info>>
+        intermediates_t;
 
   public:
     explicit local_disk(size_t const num_partitions)
-      : num_partitions_(num_partitions)
+        : num_partitions_(num_partitions)
     {
     }
 
@@ -459,11 +455,11 @@ class local_disk : detail::noncopyable
             this->close_files();
 
             // delete the temporary files
-            for (auto it=intermediate_files_.cbegin();
-                 it!=intermediate_files_.cend();
+            for (auto it = intermediate_files_.cbegin();
+                 it != intermediate_files_.cend();
                  ++it)
             {
-                intermediate_file_info const * const fileinfo = it->second.get();
+                intermediate_file_info const* const fileinfo = it->second.get();
                 detail::delete_file(fileinfo->filename);
                 for_each(
                     fileinfo->fragment_filenames.cbegin(),
@@ -471,7 +467,7 @@ class local_disk : detail::noncopyable
                     std::bind(detail::delete_file, std::placeholders::_1));
             }
         }
-        catch (std::exception const &e)
+        catch (std::exception const& e)
         {
             std::cerr << "\nError: " << e.what() << "\n";
         }
@@ -488,18 +484,18 @@ class local_disk : detail::noncopyable
     }
 
     // receive final result
-    template<typename StoreResult>
-    bool const insert(typename reduce_task_type::key_type   &key,
-                      typename reduce_task_type::value_type &value,
-                      StoreResult                           &store_result)
+    template <typename StoreResult>
+    bool const insert(typename reduce_task_type::key_type& key,
+                      typename reduce_task_type::value_type& value,
+                      StoreResult& store_result)
     {
         store_result(key, value);
         return true;
     }
 
     // receive intermediate result
-    bool const insert(key_type                     &key,
-                      typename reduce_task_type::value_type &value)
+    bool const insert(key_type& key,
+                      typename reduce_task_type::value_type& value)
     {
         size_t const partition = partitioner_(key, num_partitions_);
 
@@ -507,9 +503,10 @@ class local_disk : detail::noncopyable
         if (it == intermediate_files_.cend())
         {
             it = intermediate_files_.insert(
-                    std::make_pair(
-                        partition,
-                        std::make_shared<intermediate_file_info>())).first;
+                                        std::make_pair(
+                                            partition,
+                                            std::make_shared<intermediate_file_info>()))
+                     .first;
         }
 
         if (it->second->filename.empty())
@@ -524,18 +521,18 @@ class local_disk : detail::noncopyable
         return it->second->write_stream.write(key, value);
     }
 
-    template<typename FnObj>
-    void combine(FnObj &fn_obj)
+    template <typename FnObj>
+    void combine(FnObj& fn_obj)
     {
         using std::swap;
 
         this->close_files();
-        for (auto it=intermediate_files_.cbegin(); it!=intermediate_files_.cend(); ++it)
+        for (auto it = intermediate_files_.cbegin(); it != intermediate_files_.cend(); ++it)
         {
             std::string outfilename = platform::get_temporary_filename();
 
             // run the combine function to combine records with the same key
-            auto &filename = it->second->filename;
+            auto& filename = it->second->filename;
             combine_fn_(filename, outfilename);
             detail::delete_file(filename);
             swap(filename, outfilename);
@@ -543,10 +540,10 @@ class local_disk : detail::noncopyable
         this->close_files();
     }
 
-    void merge_from(local_disk &other)
+    void merge_from(local_disk& other)
     {
         assert(num_partitions_ == other.num_partitions_);
-        for (size_t partition=0; partition<num_partitions_; ++partition)
+        for (size_t partition = 0; partition < num_partitions_; ++partition)
         {
             auto ito = other.intermediate_files_.find(partition);
             if (ito != other.intermediate_files_.cend())
@@ -555,9 +552,10 @@ class local_disk : detail::noncopyable
                 if (it == intermediate_files_.cend())
                 {
                     it = intermediate_files_.insert(
-                            std::make_pair(
-                                partition,
-                                std::make_shared<intermediate_file_info>())).first;
+                                                std::make_pair(
+                                                    partition,
+                                                    std::make_shared<intermediate_file_info>()))
+                             .first;
                 }
 
                 ito->second->write_stream.close();
@@ -594,8 +592,8 @@ class local_disk : detail::noncopyable
         }
     }
 
-    template<typename Callback>
-    void reduce(size_t const partition, Callback &callback)
+    template <typename Callback>
+    void reduce(size_t const partition, Callback& callback)
     {
 #ifdef DEBUG_TRACE_OUTPUT
         std::clog << "\nReduce Phase running for partition " << partition << "...";
@@ -611,13 +609,14 @@ class local_disk : detail::noncopyable
 
         std::pair<
             typename reduce_task_type::key_type,
-            typename reduce_task_type::value_type> kv;
-        typename reduce_task_type::key_type   last_key;
+            typename reduce_task_type::value_type>
+            kv;
+        typename reduce_task_type::key_type last_key;
         std::list<typename reduce_task_type::value_type> values;
         std::ifstream infile(filename.c_str());
         while (!(infile >> kv).eof())
         {
-            if (kv.first != last_key  &&  length(kv.first) > 0)
+            if (kv.first != last_key && length(kv.first) > 0)
             {
                 if (length(last_key) > 0)
                 {
@@ -638,17 +637,18 @@ class local_disk : detail::noncopyable
         detail::delete_file(filename.c_str());
     }
 
-    static bool const read_record(std::istream &infile,
-                                  typename reduce_task_type::key_type   &key,
-                                  typename reduce_task_type::value_type &value)
+    static bool const read_record(std::istream& infile,
+                                  typename reduce_task_type::key_type& key,
+                                  typename reduce_task_type::value_type& value)
     {
         std::pair<typename reduce_task_type::key_type,
-                  typename reduce_task_type::value_type> keyvalue;
+                  typename reduce_task_type::value_type>
+            keyvalue;
         infile >> keyvalue;
-        if (infile.eof()  ||  infile.fail())
+        if (infile.eof() || infile.fail())
             return false;
 
-        key   = keyvalue.first;
+        key = keyvalue.first;
         value = keyvalue.second;
         return true;
     }
@@ -656,22 +656,26 @@ class local_disk : detail::noncopyable
   private:
     void close_files(void)
     {
-        for (auto it=intermediate_files_.cbegin(); it!=intermediate_files_.cend(); ++it)
+        for (auto it = intermediate_files_.cbegin(); it != intermediate_files_.cend(); ++it)
             it->second->write_stream.close();
     }
 
   private:
-    typedef enum { map_phase, reduce_phase } phase_t;
+    typedef enum
+    {
+        map_phase,
+        reduce_phase
+    } phase_t;
 
-    size_t const    num_partitions_;
+    size_t const num_partitions_;
     intermediates_t intermediate_files_;
-    CombineFile     combine_fn_;
-    PartitionFn     partitioner_;
+    CombineFile combine_fn_;
+    PartitionFn partitioner_;
 };
 
-}   // namespace intermediates
+} // namespace intermediates
 
-}   // namespace mapreduce
+} // namespace mapreduce
 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -679,10 +683,10 @@ class local_disk : detail::noncopyable
 // to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions:
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE

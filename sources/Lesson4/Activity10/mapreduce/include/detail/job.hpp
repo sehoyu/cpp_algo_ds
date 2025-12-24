@@ -3,61 +3,64 @@
 
 #pragma once
 
-namespace mapreduce {
+namespace mapreduce
+{
 
-template<typename T> uintmax_t    const length(T const &str);
-template<typename T> char const * const data(T const &str);
+template <typename T>
+uintmax_t const length(T const& str);
+template <typename T>
+char const* const data(T const& str);
 
-template<>
-inline uintmax_t const length(std::string const &str)
+template <>
+inline uintmax_t const length(std::string const& str)
 {
     return str.length();
 }
 
-template<>
-inline char const * const data(std::string const &str)
+template <>
+inline char const* const data(std::string const& str)
 {
     return str.data();
 }
 
-template<typename MapKey, typename MapValue>
+template <typename MapKey, typename MapValue>
 class map_task
 {
   public:
-    typedef MapKey   key_type;
-    typedef MapValue value_type;             
+    typedef MapKey key_type;
+    typedef MapValue value_type;
 };
 
-template<typename ReduceKey, typename ReduceValue>
+template <typename ReduceKey, typename ReduceValue>
 class reduce_task
 {
   public:
-    typedef ReduceKey   key_type;
+    typedef ReduceKey key_type;
     typedef ReduceValue value_type;
 };
 
-template<typename MapTask,
-         typename ReduceTask,
-         typename Combiner          = null_combiner,
-         typename Datasource        = datasource::directory_iterator<MapTask>,
-         typename IntermediateStore = intermediates::in_memory<MapTask, ReduceTask>,
-         typename StoreResult       = typename IntermediateStore::store_result_type>
+template <typename MapTask,
+          typename ReduceTask,
+          typename Combiner = null_combiner,
+          typename Datasource = datasource::directory_iterator<MapTask>,
+          typename IntermediateStore = intermediates::in_memory<MapTask, ReduceTask>,
+          typename StoreResult = typename IntermediateStore::store_result_type>
 class job : detail::noncopyable
 {
   public:
-    typedef MapTask           map_task_type;
-    typedef ReduceTask        reduce_task_type;
-    typedef Combiner          combiner_type;
-    typedef Datasource        datasource_type;
+    typedef MapTask map_task_type;
+    typedef ReduceTask reduce_task_type;
+    typedef Combiner combiner_type;
+    typedef Datasource datasource_type;
     typedef IntermediateStore intermediate_store_type;
 
     typedef
-    typename intermediate_store_type::const_result_iterator
-    const_result_iterator;
+        typename intermediate_store_type::const_result_iterator
+            const_result_iterator;
 
     typedef
-    typename intermediate_store_type::keyvalue_t
-    keyvalue_t;
+        typename intermediate_store_type::keyvalue_t
+            keyvalue_t;
 
   private:
     class map_task_runner : detail::noncopyable
@@ -65,15 +68,15 @@ class job : detail::noncopyable
       public:
         typedef ReduceTask reduce_task_type;
 
-        map_task_runner(job &j)
-          : job_(j),
-            intermediate_store_(job_.number_of_partitions())
+        map_task_runner(job& j)
+            : job_(j),
+              intermediate_store_(job_.number_of_partitions())
         {
         }
 
         // 'value' parameter is not a reference to const to enable streams to be passed
-        map_task_runner &operator()(typename map_task_type::key_type const &key,
-                                    typename map_task_type::value_type     &value)
+        map_task_runner& operator()(typename map_task_type::key_type const& key,
+                                    typename map_task_type::value_type& value)
         {
             map_task_type()(*this, key, value);
 
@@ -85,35 +88,35 @@ class job : detail::noncopyable
             return *this;
         }
 
-        template<typename T>
-        bool const emit_intermediate(T const &key, typename reduce_task_type::value_type const &value)
+        template <typename T>
+        bool const emit_intermediate(T const& key, typename reduce_task_type::value_type const& value)
         {
             return intermediate_store_.insert(key, value);
         }
 
-        intermediate_store_type &intermediate_store(void)
+        intermediate_store_type& intermediate_store(void)
         {
             return intermediate_store_;
         }
 
       private:
-        job                     &job_;
-        intermediate_store_type  intermediate_store_;
+        job& job_;
+        intermediate_store_type intermediate_store_;
     };
 
     class reduce_task_runner : detail::noncopyable
     {
       public:
         reduce_task_runner(
-            std::string       const &output_filespec,
-            size_t            const &partition,
-            size_t            const  num_partitions,
-            intermediate_store_type &intermediate_store,
-            results                 &result)
-          : partition_(partition),
-            result_(result),
-            intermediate_store_(intermediate_store),
-            store_result_(output_filespec, partition, num_partitions)
+            std::string const& output_filespec,
+            size_t const& partition,
+            size_t const num_partitions,
+            intermediate_store_type& intermediate_store,
+            results& result)
+            : partition_(partition),
+              result_(result),
+              intermediate_store_(intermediate_store),
+              store_result_(output_filespec, partition, num_partitions)
         {
         }
 
@@ -122,14 +125,14 @@ class job : detail::noncopyable
             intermediate_store_.reduce(partition_, *this);
         }
 
-        void emit(typename reduce_task_type::key_type   const &key,
-                  typename reduce_task_type::value_type const &value)
+        void emit(typename reduce_task_type::key_type const& key,
+                  typename reduce_task_type::value_type const& value)
         {
             intermediate_store_.insert(key, value, store_result_);
         }
 
-        template<typename It>
-        void operator()(typename reduce_task_type::key_type const &key, It it, It ite)
+        template <typename It>
+        void operator()(typename reduce_task_type::key_type const& key, It it, It ite)
         {
             ++result_.counters.reduce_keys_executed;
             reduce_task_type()(*this, key, it, ite);
@@ -137,19 +140,19 @@ class job : detail::noncopyable
         }
 
       private:
-        size_t const            &partition_;
-        results                 &result_;
-        intermediate_store_type &intermediate_store_;
-        StoreResult              store_result_;
+        size_t const& partition_;
+        results& result_;
+        intermediate_store_type& intermediate_store_;
+        StoreResult store_result_;
     };
 
   public:
-    job(datasource_type &datasource, specification const &spec)
-      : datasource_(datasource),
-        specification_(spec),
-        intermediate_store_(specification_.reduce_tasks)
-     {
-     }
+    job(datasource_type& datasource, specification const& spec)
+        : datasource_(datasource),
+          specification_(spec),
+          intermediate_store_(specification_.reduce_tasks)
+    {
+    }
 
     const_result_iterator begin_results(void) const
     {
@@ -161,7 +164,7 @@ class job : detail::noncopyable
         return intermediate_store_.end_results();
     }
 
-    bool const get_next_map_key(typename map_task_type::key_type *&key)
+    bool const get_next_map_key(typename map_task_type::key_type*& key)
     {
         std::unique_ptr<typename map_task_type::key_type> next_key(new typename map_task_type::key_type);
         if (!datasource_.setup_key(*next_key))
@@ -180,23 +183,23 @@ class job : detail::noncopyable
         return specification_.map_tasks;
     }
 
-    template<typename SchedulePolicy>
-    void run(results &result)
+    template <typename SchedulePolicy>
+    void run(results& result)
     {
         SchedulePolicy schedule;
         run(schedule, result);
     }
 
-    template<typename SchedulePolicy>
-    void run(SchedulePolicy &schedule, results &result)
+    template <typename SchedulePolicy>
+    void run(SchedulePolicy& schedule, results& result)
     {
         auto const start_time = std::chrono::system_clock::now();
         schedule(*this, result);
         result.job_runtime = std::chrono::system_clock::now() - start_time;
     }
 
-    template<typename Sync>
-    bool const run_map_task(typename map_task_type::key_type *key, results &result, Sync &sync)
+    template <typename Sync>
+    bool const run_map_task(typename map_task_type::key_type* key, results& result, Sync& sync)
     {
         auto const start_time = std::chrono::system_clock::now();
 
@@ -205,7 +208,7 @@ class job : detail::noncopyable
             ++result.counters.map_keys_executed;
 
             std::unique_ptr<typename map_task_type::key_type> map_key_ptr(key);
-            typename map_task_type::key_type &map_key = *map_key_ptr;
+            typename map_task_type::key_type& map_key = *map_key_ptr;
 
             // get some data
             typename map_task_type::value_type value;
@@ -223,7 +226,7 @@ class job : detail::noncopyable
             intermediate_store_.merge_from(runner.intermediate_store());
             ++result.counters.map_keys_completed;
         }
-        catch (std::exception &e)
+        catch (std::exception& e)
         {
             std::cerr << "\nError: " << e.what() << "\n";
             ++result.counters.map_key_errors;
@@ -239,7 +242,7 @@ class job : detail::noncopyable
         intermediate_store_.run_intermediate_results_shuffle(partition);
     }
 
-    bool const run_reduce_task(size_t const partition, results &result)
+    bool const run_reduce_task(size_t const partition, results& result)
     {
         bool success = true;
 
@@ -254,25 +257,25 @@ class job : detail::noncopyable
                 result);
             runner.reduce();
         }
-        catch (std::exception &e)
+        catch (std::exception& e)
         {
             std::cerr << "\nError: " << e.what() << "\n";
             ++result.counters.reduce_key_errors;
             success = false;
         }
-        
+
         result.reduce_times.push_back(std::chrono::system_clock::now() - start_time);
 
         return success;
     }
 
   private:
-    datasource_type         &datasource_;
-    specification     const &specification_;
-    intermediate_store_type  intermediate_store_;
+    datasource_type& datasource_;
+    specification const& specification_;
+    intermediate_store_type intermediate_store_;
 };
 
-}   // namespace mapreduce
+} // namespace mapreduce
 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -280,10 +283,10 @@ class job : detail::noncopyable
 // to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions:
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE

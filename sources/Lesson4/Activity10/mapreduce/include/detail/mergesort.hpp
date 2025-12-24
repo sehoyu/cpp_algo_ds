@@ -3,55 +3,57 @@
 
 #pragma once
 
-//#define DEBUG_TRACE_OUTPUT
+// #define DEBUG_TRACE_OUTPUT
 
+#include <boost/filesystem.hpp>
 #include <deque>
+#include <fstream>
+#include <iostream>
 #include <list>
 #include <map>
 #include <sstream>
-#include <fstream>
-#include <iostream>
-#include <boost/filesystem.hpp>
 
 #ifdef __GNUC__
 #include <cstring> // ubuntu linux
 #include <fstream> // ubuntu linux
 #endif
 
-namespace mapreduce {
+namespace mapreduce
+{
 
-namespace detail {
+namespace detail
+{
 
-template<typename T>
-bool const less_2nd(T const &first, T const &second)
+template <typename T>
+bool const less_2nd(T const& first, T const& second)
 {
     return first.second < second.second;
 }
 
-template<typename T>
-bool const greater_2nd(T const &first, T const &second)
+template <typename T>
+bool const greater_2nd(T const& first, T const& second)
 {
     return first.second > second.second;
 }
 
-template<typename It>
-bool const do_file_merge(It first, It last, std::string const &outfilename)
+template <typename It>
+bool const do_file_merge(It first, It last, std::string const& outfilename)
 {
 #ifdef _DEBUG
-    int const max_files=10;
+    int const max_files = 10;
 #endif
 
     int count = 0;
     std::ofstream outfile(outfilename.c_str(), std::ios_base::out | std::ios_base::binary);
-    while (first!=last)
+    while (first != last)
     {
         //!!!subsequent times around the loop need to merge with outfilename from previous iteration
         // in the meantime, we assert if we go round the loop more than once as it will produce incorrect results
         assert(++count == 1);
 
-        typedef std::list<std::pair<std::shared_ptr<std::ifstream>, std::string> > file_lines_t;
+        typedef std::list<std::pair<std::shared_ptr<std::ifstream>, std::string>> file_lines_t;
         file_lines_t file_lines;
-        for (; first!=last; ++first)
+        for (; first != last; ++first)
         {
             auto file = std::make_shared<std::ifstream>(first->c_str(), std::ios_base::in | std::ios_base::binary);
             if (!file->is_open())
@@ -84,7 +86,7 @@ bool const do_file_merge(It first, It last, std::string const &outfilename)
     return true;
 }
 
-inline bool const delete_file(std::string const &pathname)
+inline bool const delete_file(std::string const& pathname)
 {
     if (pathname.empty())
         return true;
@@ -97,19 +99,20 @@ inline bool const delete_file(std::string const &pathname)
 #endif
         success = boost::filesystem::remove(pathname);
     }
-    catch (std::exception &e)
+    catch (std::exception& e)
     {
-        std::cerr << "Error deleting file \"" << pathname << "\"\n" << e.what() << "\n";
+        std::cerr << "Error deleting file \"" << pathname << "\"\n"
+                  << e.what() << "\n";
     }
     return success;
 }
 
-template<typename Filenames>
+template <typename Filenames>
 class temporary_file_manager : detail::noncopyable
 {
   public:
-    temporary_file_manager(Filenames &filenames)
-      : filenames_(filenames)
+    temporary_file_manager(Filenames& filenames)
+        : filenames_(filenames)
     {
     }
 
@@ -121,39 +124,40 @@ class temporary_file_manager : detail::noncopyable
             {
                 delete_file(filename);
             }
-            catch (std::exception &)
+            catch (std::exception&)
             {
             }
         }
     }
 
   private:
-    Filenames &filenames_;
+    Filenames& filenames_;
 };
 
-}   // namespace detail
+} // namespace detail
 
-template<typename T>
+template <typename T>
 struct shared_ptr_indirect_less
 {
-    bool operator()(std::shared_ptr<T> const &left, std::shared_ptr<T> const &right) const
+    bool operator()(std::shared_ptr<T> const& left, std::shared_ptr<T> const& right) const
     {
         return *left < *right;
     }
 };
 
-template<typename Record>
-bool const file_key_combiner(std::string const &in,
-                             std::string const &out,
-                             uint32_t    const  max_lines = 4294967000U)
+template <typename Record>
+bool const file_key_combiner(std::string const& in,
+                             std::string const& out,
+                             uint32_t const max_lines = 4294967000U)
 {
 #ifdef DEBUG_TRACE_OUTPUT
     std::clog << "\ncombining file keys " << in << "\n               into " << out;
 #endif
-    std::deque<std::string>         temporary_files;
+    std::deque<std::string> temporary_files;
     detail::temporary_file_manager<
-        std::deque<std::string> >   tfm(temporary_files);
-    
+        std::deque<std::string>>
+        tfm(temporary_files);
+
     std::ifstream infile(in.c_str(), std::ios_base::in | std::ios_base::binary);
     if (!infile.is_open())
     {
@@ -167,7 +171,7 @@ bool const file_key_combiner(std::string const &in,
         using lines_t = std::map<std::shared_ptr<Record>, std::streamsize, shared_ptr_indirect_less<Record>>;
         lines_t lines;
 
-        for (uint32_t loop=0; !infile.eof()  &&  loop<max_lines; ++loop)
+        for (uint32_t loop = 0; !infile.eof() && loop < max_lines; ++loop)
         {
             if (infile.fail())
                 BOOST_THROW_EXCEPTION(std::runtime_error("An error occurred reading the input file."));
@@ -186,7 +190,7 @@ bool const file_key_combiner(std::string const &in,
         std::string const temp_filename(platform::get_temporary_filename());
         temporary_files.push_back(temp_filename);
         std::ofstream file(temp_filename.c_str(), std::ios_base::out | std::ios_base::binary);
-        for (auto it=lines.cbegin(); it!=lines.cend(); ++it)
+        for (auto it = lines.cbegin(); it != lines.cend(); ++it)
         {
             if (file.fail())
                 BOOST_THROW_EXCEPTION(std::runtime_error("An error occurred writing temporary a file."));
@@ -205,10 +209,10 @@ bool const file_key_combiner(std::string const &in,
     else
         detail::do_file_merge(temporary_files.cbegin(), temporary_files.cend(), out);
 
-	return true;
+    return true;
 }
 
-}   // namespace mapreduce
+} // namespace mapreduce
 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -216,10 +220,10 @@ bool const file_key_combiner(std::string const &in,
 // to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions:
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
