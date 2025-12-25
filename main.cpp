@@ -1,20 +1,14 @@
-#include "ch01/dynamic_array_my_answer.h"
+#include "ch01/build_array.h"
 #include <algorithm>
 #include <iostream>
 #include <sstream>
 
 int main()
 {
-    dynamic_array<int> numbers(5);
-    int data[5] = {1, 2, 3, 4, 5};
-    for (int i = 0; i < std::size(data); ++i)
-    {
-        numbers[i] = data[i];
-    }
+    auto data = build_array(1, 0u, 'a', 3.2f, false);
 
-    for (const auto i : numbers)
-    {
-        std::cout << i << std::endl;
-    }
+    for (auto i : data)
+        std::cout << i << " ";
+    std::cout << std::endl;
     return 0;
 }

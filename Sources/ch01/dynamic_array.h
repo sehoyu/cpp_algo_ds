@@ -3,6 +3,11 @@
 #include <iostream>
 #include <sstream>
 
+// 0: 연습 모드 (직접 구현부 활성화)
+// 1: 솔루션 모드 (모범 답안 및 상세 해설 활성화)
+#define SOLVED 1
+#if SOLVED
+// <editor-fold desc="모범 답안 및 상세 해설 보기">
 template <typename T>
 class dynamic_array
 {
@@ -136,3 +141,9 @@ std::ostream& operator<<(std::ostream& os, const student& s)
     os << s.name << s.standard;
     return os;
 }
+// </editor-fold>
+#else
+    // 전체 코드 작성
+
+#endif
+
