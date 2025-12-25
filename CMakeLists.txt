@@ -13,13 +13,13 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # 헤더 파일은 실행 파일 생성 대상(add_executable)에 넣지 않아도 됩니다.
 # 하지만 IDE(CLion)에서 인덱싱이 잘 되게 하려면 포함하는 것이 좋습니다.
 # headers 폴더 내의 모든 .h 파일을 찾아서 HEADER_FILES 변수에 저장
-file(GLOB_RECURSE HEADER_FILES "headers/*.h")
+file(GLOB_RECURSE HEADER_FILES "exercises/*.h")
 add_executable(main
         main.cpp
         ${HEADER_FILES} # 찾은 파일들을 자동으로 포함
 )
 # headers 폴더를 포함 경로에 추가 (include "파일명.h" 만으로 호출 가능하게 함)
-target_include_directories(main PUBLIC headers sources)
+target_include_directories(main PUBLIC Book Exercises Sources)
 #헤더 파일을 개별적으로 추가할 때
 #add_executable(main_exec
 #        main.cpp
